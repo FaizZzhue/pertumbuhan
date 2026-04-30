@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "90501329716",
+    "project_id": "pertumbuhan-f58c4",
+    "storage_bucket": "pertumbuhan-f58c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90501329716:android:442205658737f2c0512b61",
+        "android_client_info": {
+          "package_name": "com.example.pertumbuhan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9_cGTKfK2Fg_uwJhfxDkOx9e5PLSIXDY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
