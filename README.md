@@ -132,10 +132,10 @@ flutter run
 ## 📄 Lisensi
 
 Project ini dibuat untuk keperluan tugas akademik.  
-© 202 Pertumbuhan App — All Rights Reserved.
+© 2026 Pertumbuhan App — All Rights Reserved.
 
 ---
 
 <div align="center">
-  <i>🌱 "Setiap tanaman punya c6erita. Pertumbuhan membantu kamu mengingatnya."</i>
+  <i>🌱 "Setiap tanaman punya cerita. Pertumbuhan membantu kamu mengingatnya."</i>
 </div>
