@@ -8,13 +8,16 @@ environment:
 
 dependencies:
   cloud_firestore: ^6.3.0
+  dotted_border: ^2.0.0
   firebase_auth: ^6.4.0
   firebase_core: ^4.7.0
   firebase_database: ^12.3.0
   flutter:
     sdk: flutter
+  flutter_native_splash: ^2.4.7
   geolocator: ^14.0.2
   image_picker: ^1.2.2
+  intl: ^0.20.2
   url_launcher: ^6.3.2
 
 dev_dependencies:

@@ -3,18 +3,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Post {
   String? id;
   String? imageBase64;
-  final String description;
+  String plantName;
+  String scientificName;
   final String category;
+  final String description;
   Timestamp? createdAt;
   Timestamp? updatedAt;
-  String? latitude;
-  String? longitude;
+  double? latitude;
+  double? longitude;
   String? userId;
   String? userFullName;
 
   Post({
     this.id,
     this.imageBase64,
+    required this.plantName,
+    required this.scientificName,
     required this.description,
     required this.category,
     this.createdAt,
@@ -29,6 +33,8 @@ class Post {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Post(
       id: doc.id,
+      plantName: data['plantName'],
+      scientificName: data['scientificName'],
       imageBase64: data['image_base_64'],
       description: data['description'],
       category: data['category'],
@@ -43,7 +49,9 @@ class Post {
 
   Map<String, dynamic> toDocument() {
     return {
-      'image_base64': imageBase64,
+      'image_base_64': imageBase64,
+      'plantName': plantName,
+      'scientificName': scientificName,
       'description': description,
       'category': category,
       'created_at': createdAt,
