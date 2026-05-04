@@ -21,7 +21,6 @@ Aplikasi ini dibuat sebagai tugas mata kuliah **Pemrograman Aplikasi Bergerak 2*
 - 📝 **Jurnal Pertumbuhan** — Tambah catatan log harian perkembangan tanaman
 - ☁️ **Sinkronisasi Cloud** — Data tersimpan dan tersinkron via Firebase Firestore
 - 🖼️ **Penyimpanan Foto** — Foto tanaman diupload ke Firebase Storage
-- 💾 **Cache Lokal** — Data tersimpan lokal menggunakan SQLite untuk akses offline
 
 ---
 
@@ -35,8 +34,6 @@ Aplikasi ini dibuat sebagai tugas mata kuliah **Pemrograman Aplikasi Bergerak 2*
 | **Geolocator** | Deteksi koordinat GPS lokasi tanam |
 | **Image Picker** | Mengambil foto dari kamera atau galeri |
 | **URL Launcher** | Membuka lokasi di Google Maps |
-| **SQLite (sqflite)** | Database lokal / cache offline |
-| **Provider / Riverpod** | State management |
 
 ---
 
@@ -55,7 +52,6 @@ dependencies:
 
   # Location
   geolocator: ^13.0.0
-  geocoding: ^3.0.0
 
   # Media
   image_picker: ^1.1.2
