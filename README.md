@@ -59,10 +59,6 @@ dependencies:
   # URL
   url_launcher: ^6.3.0
 
-  # Local Database
-  sqflite: ^2.3.3+1
-  path: ^1.9.0
-
   # UI
   cached_network_image: ^3.4.1
   intl: ^0.19.0
