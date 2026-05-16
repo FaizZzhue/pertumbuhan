@@ -78,7 +78,7 @@ dependencies:
 
 **1. Clone repository**
 ```bash
-git clone https://github.com/username/pertumbuhan.git
+git clone https://github.com/FaizZzhue/pertumbuhan.git
 cd pertumbuhan
 ```
 
