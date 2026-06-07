@@ -1,29 +1,186 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/post.dart';
 import '../services/post_service.dart';
+import 'package:image_picker/image_picker.dart';
+import '../models/growth.dart';
 
-class DetailScreen extends StatelessWidget {
+class DetailScreen extends StatefulWidget {
   final Post post;
-
   const DetailScreen({super.key, required this.post});
+
+  @override
+  State<DetailScreen> createState() => _DetailScreenState();
+}
+
+class _DetailScreenState extends State<DetailScreen> {
+  late Post post;
+  final PageController _pageController = PageController();
+
+  @override
+  void initState() {
+    super.initState();
+    post = widget.post;
+  }
 
   int get _daysSince {
     if (post.createdAt == null) return 0;
     return DateTime.now().difference(post.createdAt!.toDate()).inDays;
   }
 
+  Future<void> _showAddGrowthDialog() async {
+    XFile? image;
+    final noteCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text(
+                'Tambah Perkembangan',
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        final file = await PostService.pickImage(ImageSource.gallery);
+
+                        if (file != null) {
+                          setDialogState(() {
+                            image = file;
+                          });
+                        }
+                      },
+
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: image == null
+                          ? const Icon(Icons.add_a_photo) 
+                          : FutureBuilder(
+                              future: image!.readAsBytes(),
+                              builder: (_, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
+                                }
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.memory(
+                                    snapshot.data!,
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: noteCtrl,
+                      maxLines: 4,
+                      decoration:const InputDecoration(
+                        hintText:'Catatan perkembangan...',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Batal'),
+                ),
+
+                ElevatedButton(
+                  onPressed: () async {
+                    if (image == null) return;
+                    final image64 = await PostService.convertToBase64(image!);
+                    await PostService.addGrowth(
+                      Growth(
+                        postId: post.id!,
+                        imageBase64: image64,
+                        note: noteCtrl.text,
+                      ),
+                    );
+
+                    if (mounted) {
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Simpan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final service = PostService();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F0E8),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF3D5A3E),
+        foregroundColor: Colors.white,
+        onPressed: _showAddGrowthDialog,
+        child: const Icon(Icons.add, size: 28),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: GestureDetector(
+                  onTap: () async {
+                    await PostService.toggleFavorite(post);
+                    setState(() {
+                      post.isFavorite = !post.isFavorite;
+                    });
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            post.isFavorite
+                              ? 'Ditambahkan ke favorit ❤️'
+                              : 'Dihapus dari favorit 🤍',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    width: 40,
+                    child: Icon(
+                      post.isFavorite
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                      color: post.isFavorite
+                        ? Colors.red
+                        : Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
             expandedHeight: 280,
             pinned: true,
             backgroundColor: const Color(0xFF1E2B1F),
@@ -45,10 +202,57 @@ class DetailScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   post.imageBase64 != null && post.imageBase64!.isNotEmpty
-                    ? Image.memory(
-                        base64Decode(post.imageBase64!),
-                        fit: BoxFit.cover,
-                      )
+                    ? StreamBuilder<List<Growth>>(
+                      stream: PostService.getGrowth(post.id!),
+                      builder: (context, snapshot) {
+                        final logs = snapshot.data ?? [];
+                        print("TOTAL LOG = ${logs.length}");
+                        for (final log in logs) {
+                          print("NOTE = ${log.note}");
+                          print("IMAGE LENGTH = ${log.imageBase64.length}");
+                        }
+
+                        final images = [
+                          post.imageBase64,
+                          ...logs.map(
+                            (e) => e.imageBase64,
+                          ),
+                        ];
+
+                        print("TOTAL IMAGE = ${images.length}");
+                        for (var img in images) {
+                          print("IMAGE PREVIEW = ${img?.substring(0, 20)}");
+                        }
+                        return PageView.builder(
+                          controller: _pageController,
+                          itemCount: images.length,
+                          itemBuilder: (_, index) {
+                            return Image.memory(
+                              base64Decode(
+                                images[index]!
+                                  .replaceAll('\n', '')
+                                  .replaceAll('\r', '')
+                                  .trim(),
+                              ),
+                              fit: BoxFit.cover,
+                              gaplessPlayback: true,
+                              errorBuilder: (context, error, stackTrace) {
+                                print("IMAGE ERROR = $error");
+                                return Container(
+                                  color: Colors.red,
+                                  child: const Center(
+                                    child: Text(
+                                      "ERROR IMAGE",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    )
                     : _heroPlaceholder(),
                   Container(
                     decoration: const BoxDecoration(
@@ -95,19 +299,19 @@ class DetailScreen extends StatelessWidget {
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
+                            horizontal: 12, vertical: 5),
+                            decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                                color: Colors.white.withOpacity(0.3)),
+                              color: Colors.white.withOpacity(0.3)),
                           ),
                           child: Text(
                             'Hari ke-$_daysSince',
                             style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500),
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
@@ -283,23 +487,53 @@ class DetailScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 14),
-                      _logItem(
-                        date: post.createdAt != null
-                              ? DateFormat('d MMM y').format(post.createdAt!.toDate())
-                              : '-',
-                        text: '🌱 Tanaman pertama kali ditanam dan didokumentasikan.',
-                        isLast: false,
-                      ),
-                      _logItem(
-                        date: 'Hari ini',
-                        text:
-                            'Sudah memasuki hari ke-$_daysSince sejak ditanam.',
-                        isLast: true,
-                      ),
+                      StreamBuilder<List<Growth>>(
+                        stream: PostService.getGrowth(post.id!),
+                        builder: (_, snapshot) {
+                          final logs = snapshot.data ?? [];
+                          return Column(
+                            children: [
+                              _logItem(
+                                date: DateFormat(
+                                  'd MMM y',
+                                ).format(
+                                  post.createdAt!.toDate(),
+                                ),
+                                text: '🌱 Tanaman pertama kali didokumentasikan.',
+                                isLast: logs.isEmpty,
+                              ),
+                              ...logs.asMap().entries.map(
+                                (entry) {
+                                  final index = entry.key;
+                                  final log = entry.value;
+                                  return GestureDetector(
+                                    onTap: () {
+                                      _pageController.animateToPage(
+                                        index + 1,
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        curve: Curves.easeInOut,
+                                      );
+                                    },
+
+                                    child: _logItem(
+                                      date: log.createdAt == null
+                                        ? '-'
+                                        : DateFormat('d MMM y').format(log.createdAt!.toDate()),
+                                      text: log.note,
+                                      isLast: index == logs.length - 1,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      )
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 40),
               ]),
             ),

@@ -15,8 +15,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-
   String _greeting() {
     final hour = DateTime.now().hour;
     if (hour < 11) return 'Selamat pagi ☀️';
@@ -66,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                'Kebun Kamu',
+                                'Faiz Gardener',
                                 style: TextStyle(
                                   color: Color(0xFFF5F0E8),
                                   fontSize: 22,
@@ -155,7 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             onDelete: () => _confirmDelete(context, post),
-                          ),
+                            onFavorite: () async {
+                              await PostService.toggleFavorite(post);
+                            },
+                          )
                         );
                       },
                       childCount: posts.length + 1,
@@ -178,7 +179,6 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: const CircleBorder(),
         child: const Icon(Icons.add, size: 28),
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -248,67 +248,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBottomNav() {
-    const items = [
-      {'icon': Icons.home_outlined, 'label': 'Beranda'},
-      {'icon': Icons.map_outlined, 'label': 'Peta'},
-      {'icon': Icons.bar_chart_outlined, 'label': 'Statistik'},
-      {'icon': Icons.person_outline, 'label': 'Profil'},
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 12,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (i) {
-              final active = _currentIndex == i;
-              return GestureDetector(
-                onTap: () => setState(() => _currentIndex = i),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      items[i]['icon'] as IconData,
-                      color: active
-                          ? const Color(0xFF3D5A3E)
-                          : const Color(0xFFBBBBBB),
-                      size: 22,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      items[i]['label'] as String,
-                      style: TextStyle(
-                        fontSize: 9,
-                        letterSpacing: 0.5,
-                        color: active
-                            ? const Color(0xFF3D5A3E)
-                            : const Color(0xFFBBBBBB),
-                        fontWeight:
-                            active ? FontWeight.w600 : FontWeight.normal,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ),
-      ),
-    );
-  }
-
   void _confirmDelete(BuildContext context, Post post) {
     showDialog(
       context: context,
@@ -316,13 +255,13 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFFF5F0E8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hapus Tanaman?',
-            style: TextStyle(fontStyle: FontStyle.italic)),
+          style: TextStyle(fontStyle: FontStyle.italic)),
         content: Text('${post.plantName} akan dihapus permanen.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Batal',
-                style: TextStyle(color: Color(0xFF7B9E80))),
+              style: TextStyle(color: Color(0xFF7B9E80))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -332,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10)),
             ),
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
           ),
@@ -348,13 +287,13 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFFF5F0E8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Keluar?',
-            style: TextStyle(fontStyle: FontStyle.italic)),
+          style: TextStyle(fontStyle: FontStyle.italic)),
         content: const Text('Kamu akan keluar dari akunmu.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Batal',
-                style: TextStyle(color: Color(0xFF7B9E80))),
+              style: TextStyle(color: Color(0xFF7B9E80))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -364,10 +303,10 @@ class _HomeScreenState extends State<HomeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3D5A3E),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10)),
             ),
             child:
-                const Text('Keluar', style: TextStyle(color: Colors.white)),
+              const Text('Keluar', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -379,11 +318,13 @@ class _PlantCard extends StatelessWidget {
   final Post post;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback onFavorite;
 
   const _PlantCard({
     required this.post,
     required this.onTap,
     required this.onDelete,
+    required this.onFavorite,
   });
 
   int get _daysSince =>
@@ -430,43 +371,43 @@ class _PlantCard extends StatelessWidget {
                     : _imagePlaceholder(),
                 ),
                 Positioned(
-                  top: 10, right: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.45),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on, color: Colors.white, size: 10),
-                        const SizedBox(width: 3),
-                        Text(
-                          (() {
-                            final text =
-                                '${post.latitude?.toStringAsFixed(4) ?? '-'}, ${post.longitude?.toStringAsFixed(4) ?? '-'}';
-                            return text.length > 20 ? '${text.substring(0, 20)}...' : text;
-                          })(),
-                          style: const TextStyle(color: Colors.white, fontSize: 9),
-                        )
-                      ],
+                  top: 10,
+                  right: 10,
+                  child: GestureDetector(
+                    onTap: onFavorite,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(
+                        post.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: post.isFavorite
+                            ? Colors.red
+                            : Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: 10, left: 10,
+                  top: 10, 
+                  left: 10,
                   child: GestureDetector(
                     onTap: onDelete,
                     child: Container(
-                      width: 30, height: 30,
+                      width: 30, 
+                      height: 30,
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(15),
                       ),
                       child: const Icon(Icons.delete_outline,
-                          color: Colors.white, size: 15),
+                        color: Colors.white, size: 15),
                     ),
                   ),
                 ),
@@ -492,21 +433,21 @@ class _PlantCard extends StatelessWidget {
                     Text(
                       post.scientificName,
                       style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF7B9E80)),
+                        fontSize: 11, color: Color(0xFF7B9E80)),
                     ),
                   ],
                   const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(Icons.location_on_outlined,
-                          size: 12, color: Color(0xFF7B9E80)),
+                        size: 12, color: Color(0xFF7B9E80)),
                       const SizedBox(width: 3),
                       Expanded(
                         child: Text(
                           '${post.latitude?.toStringAsFixed(4) ?? '-'}, ${post.longitude?.toStringAsFixed(4) ?? '-'}',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                              fontSize: 11, color: Color(0xFF7B9E80)),
+                            fontSize: 11, color: Color(0xFF7B9E80)),
                         ),
                       ),
                     ],
@@ -517,7 +458,7 @@ class _PlantCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF888888), height: 1.5),
+                      fontSize: 12, color: Color(0xFF888888), height: 1.5),
                   ),
                   const SizedBox(height: 10),
                   const Divider(height: 1, color: Color(0xFFF0F0F0)),
@@ -527,7 +468,7 @@ class _PlantCard extends StatelessWidget {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                          horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFF3D5A3E).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
@@ -546,7 +487,7 @@ class _PlantCard extends StatelessWidget {
                           ? DateFormat('d MMM y').format(post.createdAt!.toDate())
                           : '-',
                         style: const TextStyle(
-                            fontSize: 10, color: Color(0xFFAAAAAA)),
+                          fontSize: 10, color: Color(0xFFAAAAAA)),
                       ),
                     ],
                   ),

@@ -1,16 +1,16 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pertumbuhan/models/post.dart';
+import 'package:pertumbuhan/models/growth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PostService {
   static final FirebaseFirestore _database = FirebaseFirestore.instance;
-  static final CollectionReference _postsCollection =
-      _database.collection('posts');
+  static final CollectionReference _postsCollection = _database.collection('posts');
+  static final CollectionReference _growth = FirebaseFirestore.instance.collection('growth');
 
   static Future<void> addPost(Post post) async {
     await _postsCollection.add({
@@ -19,6 +19,7 @@ class PostService {
       'scientificName': post.scientificName,
       'description': post.description,
       'category': post.category,
+      'is_favorite': post.isFavorite,
       'latitude': post.latitude,
       'longitude': post.longitude,
       'created_at': FieldValue.serverTimestamp(),
@@ -27,18 +28,6 @@ class PostService {
       'user_full_name': post.userFullName,
     });
   }
-
-  // static Future<File?> pickImage(ImageSource source) async {
-  //   final picker = ImagePicker();
-  //   final XFile? image = await picker.pickImage(
-  //     source: source,
-  //     imageQuality: 20,
-  //   );
-
-  //   if (image == null) return null;
-
-  //   return File(image.path);
-  // }
 
   static Future<XFile?> pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -93,9 +82,51 @@ class PostService {
 
   static Stream<List<Post>> getPostList() {
     return _postsCollection
-        .orderBy('created_at', descending: true)
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Post.fromDocument(doc)).toList());
+      .orderBy('created_at', descending: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => Post.fromDocument(doc)).toList());
+  }
+
+  static Future<int> getTotalLogs(String uid) async {
+    final snapshot = await _postsCollection
+      .where('user_id', isEqualTo: uid)
+      .get();
+
+    return snapshot.docs.length;
+  }
+
+  static Stream<List<Post>> getFavoritePosts() {
+    return _postsCollection
+      .where('is_favorite', isEqualTo: true)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => Post.fromDocument(doc)).toList(),
+      );
+  }
+
+  static Future<void> toggleFavorite(Post post) async {
+    if (post.id == null) return;
+
+    await _postsCollection.doc(post.id).update({
+      'is_favorite': !post.isFavorite,
+    });
+  }
+
+  static Future<void> addGrowth(Growth log) async {
+
+    await _growth.add({
+      'post_id': log.postId,
+      'image_base_64': log.imageBase64,
+      'note': log.note,
+      'created_at': FieldValue.serverTimestamp(),
+    });
+  }
+
+  static Stream<List<Growth>> getGrowth(String postId) {
+
+    return _growth
+      .where('post_id', isEqualTo: postId)
+      .snapshots()
+      .map((snapshot) => snapshot.docs.map((doc) => Growth.fromDocument(doc)).toList(),
+      );
   }
 }

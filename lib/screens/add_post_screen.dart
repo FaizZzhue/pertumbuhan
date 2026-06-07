@@ -171,8 +171,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
       setState(() {
         _latitude = post.latitude;
         _longitude = post.longitude;
-        _locationName =
-            "Lat: ${post.latitude}, Lng: ${post.longitude}";
+        _locationName = "Lat: ${post.latitude}, Lng: ${post.longitude}";
       });
     } catch (e) {
       _showSnack('Gagal mendapatkan lokasi');

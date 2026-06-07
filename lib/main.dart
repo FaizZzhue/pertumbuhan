@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pertumbuhan/screens/main%20_screen.dart';
 import 'firebase_options.dart';
-import 'screens/home_screen.dart';
 import 'screens/sign_in_screen.dart';
 
 void main() async {
@@ -69,7 +69,7 @@ class _SplashToHomeState extends State<SplashToHome> {
     Future.delayed(const Duration(seconds: 1), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainScreen()),
       );
     });
   }
